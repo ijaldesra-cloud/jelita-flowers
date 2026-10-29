@@ -2,10 +2,10 @@ import { useEffect, useState } from 'react'
 import { NavLink, Navigate, Outlet, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, ShoppingBag, Package, FolderTree, Newspaper, Settings, LogOut,
-  Bell, Menu, X, TrendingUp, Loader2, Store,
+  Bell, Menu, X, TrendingUp, Loader2, Store, Volume2, VolumeX,
 } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
-import { useRealtimeStaffNotifications } from '../../lib/hooks'
+import { useRealtimeStaffNotifications, useSoundPref } from '../../lib/hooks'
 import { supabase } from '../../lib/supabase'
 import { dateID } from '../../lib/format'
 import type { Notification } from '../../types'
@@ -27,6 +27,7 @@ export default function AdminLayout() {
   const [bellOpen, setBellOpen] = useState(false)
   const [notifs, setNotifs] = useState<Notification[]>([])
   const { unread, latest, markAllRead, requestPermission } = useRealtimeStaffNotifications(Boolean(isAdmin))
+  const { soundOn, toggleSound } = useSoundPref()
   const [toast, setToast] = useState<Notification | null>(null)
 
   useEffect(() => {
@@ -124,7 +125,17 @@ export default function AdminLayout() {
             </a>
           </div>
 
-          <div className="relative">
+          <div className="flex items-center gap-1">
+            <button
+              onClick={toggleSound}
+              aria-label={soundOn ? 'Matikan suara notifikasi' : 'Aktifkan suara notifikasi'}
+              title={soundOn ? 'Matikan suara notifikasi' : 'Aktifkan suara notifikasi'}
+              className={`rounded-full p-2.5 transition hover:bg-brand-50 ${soundOn ? 'text-stone-600' : 'text-stone-400'}`}
+            >
+              {soundOn ? <Volume2 className="h-5 w-5" /> : <VolumeX className="h-5 w-5" />}
+            </button>
+
+            <div className="relative">
             <button onClick={openBell} className="relative rounded-full p-2.5 text-stone-600 transition hover:bg-brand-50" aria-label="Notifikasi">
               <Bell className={`h-5 w-5 ${latest ? 'animate-bounce' : ''}`} />
               {unread > 0 && (
@@ -148,6 +159,7 @@ export default function AdminLayout() {
                 </div>
               </div>
             )}
+            </div>
           </div>
         </header>
 

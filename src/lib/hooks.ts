@@ -11,18 +11,58 @@ export function useSettings() {
   return settings
 }
 
+const SOUND_KEY = 'jpf_sound'
+const SOUND_EVENT = 'jpf-sound'
+
+/** Preferensi suara notifikasi (default: aktif) */
+export const isSoundOn = () => {
+  try { return localStorage.getItem(SOUND_KEY) !== 'off' } catch { return true }
+}
+
+/** Simpan preferensi + beri tahu semua komponen yang sedang tampil */
+export const setSoundPref = (on: boolean) => {
+  try { localStorage.setItem(SOUND_KEY, on ? 'on' : 'off') } catch { /* noop */ }
+  window.dispatchEvent(new CustomEvent<boolean>(SOUND_EVENT, { detail: on }))
+}
+
+/** Tombol on/off suara yang tersinkron antar halaman */
+export function useSoundPref() {
+  const [soundOn, setSoundOn] = useState(isSoundOn)
+  useEffect(() => {
+    const onChange = (e: Event) => setSoundOn(Boolean((e as CustomEvent<boolean>).detail))
+    window.addEventListener(SOUND_EVENT, onChange)
+    return () => window.removeEventListener(SOUND_EVENT, onChange)
+  }, [])
+  const toggleSound = () => {
+    const next = !isSoundOn()
+    setSoundPref(next)
+    return next
+  }
+  return { soundOn, toggleSound }
+}
+
 export function useRealtimeStaffNotifications(enabled: boolean) {
   const [unread, setUnread] = useState(0)
   const [latest, setLatest] = useState<Notification | null>(null)
   const [tick, setTick] = useState(0)
-  const [soundOn, setSoundOn] = useState<boolean>(() => localStorage.getItem('jpf_sound') !== 'off')
-  const soundOnRef = useRef(soundOn)
-  useEffect(() => { soundOnRef.current = soundOn }, [soundOn])
   const audioRef = useRef<HTMLAudioElement | null>(null)
+  const repeatRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Matikan suara → hentikan audio yang sedang berbunyi
+  useEffect(() => {
+    const onChange = (e: Event) => {
+      if ((e as CustomEvent<boolean>).detail) return
+      if (repeatRef.current) clearTimeout(repeatRef.current)
+      const snd = audioRef.current
+      if (snd) { snd.onended = null; snd.pause(); snd.currentTime = 0 }
+    }
+    window.addEventListener(SOUND_EVENT, onChange)
+    return () => window.removeEventListener(SOUND_EVENT, onChange)
+  }, [])
 
   // 🔊Suara notifikasi 'ding-ding' — diputar 2× biar benar-benar kedengaran
   const playAlert = () => {
-    if (!soundOnRef.current) return
+    if (!isSoundOn()) return
     try {
       if (!audioRef.current) {
         audioRef.current = new Audio('/sounds/notify.wav')
@@ -33,7 +73,14 @@ export function useRealtimeStaffNotifications(enabled: boolean) {
       snd.currentTime = 0
       const p = snd.play()
       if (p) p.then(() => {
-        snd.onended = () => setTimeout(() => { snd.currentTime = 0; snd.play().catch(() => {}) }, 350)
+        snd.onended = () => {
+          if (!isSoundOn()) return
+          repeatRef.current = setTimeout(() => {
+            if (!isSoundOn()) return
+            snd.currentTime = 0
+            snd.play().catch(() => {})
+          }, 350)
+        }
       }).catch(() => {})
     } catch { /* autoplay diblokir sebelum interaksi user */ }
   }
@@ -72,24 +119,6 @@ export function useRealtimeStaffNotifications(enabled: boolean) {
     await supabase.from('notifications').update({ is_read: true }).eq('is_read', false)
     setUnread(0)
     setTick((t) => t + 1)
-  }
-
-  const toggleSound = () => {
-    const next = !soundOnRef.current
-    setSoundOn(next)
-    localStorage.setItem('jpf_sound', next ? 'on' : 'off')
-    if (next) soundOnRef.current = true
-    if (next) {
-      // putar sekali sebagai konfirmasi
-      try {
-        if (!audioRef.current) audioRef.current = new Audio('/sounds/notify.wav')
-        const s = audioRef.current
-        s.currentTime = 0
-        s.volume = 1
-        s.play().catch(() => {})
-      } catch { /* noop */ }
-    }
-    return next
   }
 
   const requestPermission = async () => {

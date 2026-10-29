@@ -1,7 +1,8 @@
 import { useRef, useState } from 'react'
 import { Link, NavLink, useNavigate } from 'react-router-dom'
-import { ShoppingBag, Menu, X, Flower2, Lock, Speaker } from 'lucide-react'
+import { ShoppingBag, Menu, X, Flower2, Lock, Volume2, VolumeX } from 'lucide-react'
 import { useCart } from '../../context/CartContext'
+import { useSoundPref } from '../../lib/hooks'
 
 const links = [
   { to: '/', label: 'Beranda' },
@@ -15,6 +16,7 @@ const links = [
 export default function Navbar() {
   const [open, setOpen] = useState(false)
   const { count } = useCart()
+  const { soundOn, toggleSound } = useSoundPref()
   const nav = useNavigate()
   const logoTaps = useRef<number[]>([])
 
@@ -76,39 +78,13 @@ export default function Navbar() {
 
           <button
             id="sound-toggle"
-            aria-label="Aktifkan suara notifikasi"
-            data-on="on"
-            onClick={() => {
-              const sb = document.getElementById('sound-toggle') as HTMLButtonElement
-              const next = sb!.getAttribute('data-on') !== 'off'
-              sb!.setAttribute('data-on', next ? 'on' : 'off')
-              sb!.setAttribute('aria-label', next ? 'Matikan suara notifikasi' : 'Aktifkan suara notifikasi')
-              localStorage.setItem('jpf_sound', next ? 'on' : 'off')
-            }}
-            className="relative rounded-full p-2.5 text-stone-700 transition hover:bg-brand-50 hover:text-brand-700"
+            aria-label={soundOn ? 'Matikan suara notifikasi' : 'Aktifkan suara notifikasi'}
+            title={soundOn ? 'Suara notifikasi: aktif' : 'Suara notifikasi: mati'}
+            aria-pressed={soundOn}
+            onClick={toggleSound}
+            className={`rounded-full p-2.5 transition hover:bg-brand-50 hover:text-brand-700 ${soundOn ? 'text-stone-700' : 'text-stone-400'}`}
           >
-            <Speaker className="h-5 w-5" />
-            {count > 0 && (
-              <span className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-600 px-1 text-[10px] font-bold text-white">
-                {count}
-              </span>
-            )}
-          </button>
-
-          <button
-            id="sound-toggle-mobile"
-            aria-label="Aktifkan suara notifikasi"
-            data-on="on"
-            onClick={() => {
-              const sb = document.getElementById('sound-toggle-mobile') as HTMLButtonElement
-              const next = sb!.getAttribute('data-on') !== 'off'
-              sb!.setAttribute('data-on', next ? 'on' : 'off')
-              sb!.setAttribute('aria-label', next ? 'Matikan suara notifikasi' : 'Aktifkan suara notifikasi')
-              localStorage.setItem('jpf_sound', next ? 'on' : 'off')
-            }}
-            className="rounded-full p-2.5 text-stone-700 hover:bg-brand-50 lg:hidden"
-          >
-            <Speaker className="h-5 w-5" />
+            {soundOn ? <Volume2 className="h-5 w-5" /> : <VolumeX className="h-5 w-5" />}
           </button>
 
           <button
