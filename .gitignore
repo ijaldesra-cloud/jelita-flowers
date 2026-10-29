@@ -2,3 +2,10 @@ node_modules
 dist
 *.local
 _jpf_*.html
+
+# kredensial privat — jangan pernah di-commit
+.env
+.env.*
+!.env.example
+supabase/akses-login.md
+.env.akses-supabase
