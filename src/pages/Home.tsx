@@ -39,8 +39,12 @@ export default function Home() {
       {/* HERO */}
       <section className="relative overflow-hidden">
         <img
-          src="https://tokobungapurwakarta.com/storage/galleries/2026-02-10/01KH2YS2R9EKVX8V80PM6XWVY1.png"
+          src="/hero.webp"
           alt="Buket bunga Jelita Putra Florist"
+          width={1440}
+          height={1200}
+          fetchPriority="high"
+          decoding="async"
           className="absolute inset-0 h-full w-full object-cover object-center"
         />
         <div className="absolute inset-0 bg-gradient-to-r from-brand-900/85 via-brand-800/60 to-brand-600/20" />
